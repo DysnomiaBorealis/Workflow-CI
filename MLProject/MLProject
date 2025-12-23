@@ -1,0 +1,11 @@
+name: spam_detection_mlflow
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      test_size: {type: float, default: 0.2}
+      random_state: {type: int, default: 42}
+      alpha: {type: float, default: 0.1}
+    command: "python modelling.py --test_size={test_size} --random_state={random_state} --alpha={alpha}"
