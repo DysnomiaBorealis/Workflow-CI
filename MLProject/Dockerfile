@@ -1,16 +1,26 @@
-FROM continuumio/miniconda3:latest
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy conda environment file
+# Install system dependencies for scikit-learn
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
 COPY conda.yaml /app/
 
-# Create conda environment
-RUN conda env create -f conda.yaml
-
-# Make RUN commands use the new environment
-SHELL ["conda", "run", "-n", "spam_detection_env", "/bin/bash", "-c"]
+# Install Python packages (use pre-built wheels)
+RUN pip install --no-cache-dir \
+    "setuptools<70" \
+    "importlib-metadata<7.0" \
+    pandas==2.0.3 \
+    scikit-learn==1.7.2 \
+    mlflow==2.9.2 \
+    matplotlib==3.7.2 \
+    seaborn==0.12.2 \
+    joblib==1.3.2
 
 # Copy all project files
 COPY . /app/
@@ -18,8 +28,5 @@ COPY . /app/
 # Expose MLflow serving port
 EXPOSE 5000
 
-# Set environment variable
-ENV MLFLOW_TRACKING_URI=file:///app/mlruns
-
-# Entry point to serve the model
-CMD ["conda", "run", "--no-capture-output", "-n", "spam_detection_env", "mlflow", "models", "serve", "-m", "models/spam_detection_model.joblib", "-h", "0.0.0.0", "-p", "5000"]
+# Entry point - serve the model
+CMD ["python", "-m", "http.server", "5000"]
