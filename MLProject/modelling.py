@@ -1,8 +1,6 @@
 """
 Pelatihan Model Spam Detection dengan MLflow Project
 Script ini digunakan untuk CI/CD workflow dengan GitHub Actions
-
-Author: Yudhistira Paksi
 """
 
 import pandas as pd
@@ -121,108 +119,89 @@ def train_model(test_size=0.2, random_state=42, alpha=0.1):
     )
     print(f"      Training: {X_train.shape[0]}, Test: {X_test.shape[0]}")
     
-    # Set experiment only if not already in a run (mlflow run creates its own)
-    active_run = mlflow.active_run()
-    if active_run is None:
-        print("\n[3/5] Setup MLflow experiment...")
-        mlflow.set_experiment("Spam_Detection_CI")
-        print("      Experiment: Spam_Detection_CI")
-        should_end_run = True
-    else:
-        print("\n[3/5] Using existing MLflow run...")
-        print(f"      Run ID: {active_run.info.run_id}")
-        should_end_run = False
+    # mlflow run automatically creates a run context, so we don't need to create one
+    print("\n[3/5] Using MLflow run context...")
     
-    # Train model dengan MLflow tracking
+    # Train model with MLflow tracking
     print("\n[4/5] Melatih model...")
     
-    # If not in a run, start one; otherwise use the existing run
-    if should_end_run:
-        run_context = mlflow.start_run(run_name="CI_NB_Model")
-    else:
-        # Use a dummy context manager that does nothing
-        from contextlib import nullcontext
-        run_context = nullcontext()
+    # Log parameters
+    mlflow.log_param("test_size", test_size)
+    mlflow.log_param("random_state", random_state)
+    mlflow.log_param("alpha", alpha)
+    mlflow.log_param("n_features", X_train.shape[1])
+    mlflow.log_param("n_train_samples", X_train.shape[0])
+    mlflow.log_param("n_test_samples", X_test.shape[0])
     
-    with run_context:
-        
-        # Log parameters
-        mlflow.log_param("test_size", test_size)
-        mlflow.log_param("random_state", random_state)
-        mlflow.log_param("alpha", alpha)
-        mlflow.log_param("n_features", X_train.shape[1])
-        mlflow.log_param("n_train_samples", X_train.shape[0])
-        mlflow.log_param("n_test_samples", X_test.shape[0])
-        
-        # Train model
-        model = MultinomialNB(alpha=alpha)
-        model.fit(X_train, y_train)
-        
-        # Prediksi
-        y_pred = model.predict(X_test)
-        y_proba = model.predict_proba(X_test)[:, 1]
-        
-        # Hitung metrik
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, average='weighted')
-        recall = recall_score(y_test, y_pred, average='weighted')
-        f1 = f1_score(y_test, y_pred, average='weighted')
-        roc_auc = roc_auc_score(y_test, y_proba)
-        
-        # Log metrics
-        mlflow.log_metric("accuracy", accuracy)
-        mlflow.log_metric("precision", precision)
-        mlflow.log_metric("recall", recall)
-        mlflow.log_metric("f1_score", f1)
-        mlflow.log_metric("roc_auc", roc_auc)
-        
-        # Hitung confusion matrix components
-        cm = confusion_matrix(y_test, y_pred)
-        tn, fp, fn, tp = cm.ravel()
-        
-        mlflow.log_metric("true_negatives", int(tn))
-        mlflow.log_metric("false_positives", int(fp))
-        mlflow.log_metric("false_negatives", int(fn))
-        mlflow.log_metric("true_positives", int(tp))
-        mlflow.log_metric("specificity", tn / (tn + fp))
-        
-        print(f"\n      Performa Model:")
-        print(f"      Accuracy:  {accuracy:.4f}")
-        print(f"      Precision: {precision:.4f}")
-        print(f"      Recall:    {recall:.4f}")
-        print(f"      F1-Score:  {f1:.4f}")
-        print(f"      ROC-AUC:   {roc_auc:.4f}")
-        
-        # Buat artifacts directory
-        os.makedirs('artifacts', exist_ok=True)
-        
-        # Create artifacts
-        print("\n[5/5] Membuat artifacts...")
-        
-        # Confusion matrix
-        cm_path = plot_confusion_matrix(y_test, y_pred, 'artifacts/confusion_matrix.png')
-        mlflow.log_artifact(cm_path)
-        print("      Logged confusion matrix")
-        
-        # Classification report
-        report_path = save_classification_report(y_test, y_pred, 
-                                                 'artifacts/classification_report.txt')
-        mlflow.log_artifact(report_path)
-        print("      Logged classification report")
-        
-        # Log trained model
-        mlflow.sklearn.log_model(model, "model")
-        print("      Logged trained model")
-        
-        # Simpan model lokal (untuk Docker)
-        os.makedirs('models', exist_ok=True)
-        model_path = 'models/spam_detection_model.joblib'
-        joblib.dump(model, model_path)
-        mlflow.log_artifact(model_path)
-        print(f"      Saved model to {model_path}")
-        
-        run_id = mlflow.active_run().info.run_id
-        print(f"\n      MLflow Run ID: {run_id}")
+    # Train model
+    model = MultinomialNB(alpha=alpha)
+    model.fit(X_train, y_train)
+    
+    # Prediksi
+    y_pred = model.predict(X_test)
+    y_proba = model.predict_proba(X_test)[:, 1]
+    
+    # Hitung metrik
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='weighted')
+    recall = recall_score(y_test, y_pred, average='weighted')
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    roc_auc = roc_auc_score(y_test, y_proba)
+    
+    # Log metrics
+    mlflow.log_metric("accuracy", accuracy)
+    mlflow.log_metric("precision", precision)
+    mlflow.log_metric("recall", recall)
+    mlflow.log_metric("f1_score", f1)
+    mlflow.log_metric("roc_auc", roc_auc)
+    
+    # Hitung confusion matrix components
+    cm = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+    
+    mlflow.log_metric("true_negatives", int(tn))
+    mlflow.log_metric("false_positives", int(fp))
+    mlflow.log_metric("false_negatives", int(fn))
+    mlflow.log_metric("true_positives", int(tp))
+    mlflow.log_metric("specificity", tn / (tn + fp))
+    
+    print(f"\n      Performa Model:")
+    print(f"      Accuracy:  {accuracy:.4f}")
+    print(f"      Precision: {precision:.4f}")
+    print(f"      Recall:    {recall:.4f}")
+    print(f"      F1-Score:  {f1:.4f}")
+    print(f"      ROC-AUC:   {roc_auc:.4f}")
+    
+    # Buat artifacts directory
+    os.makedirs('artifacts', exist_ok=True)
+    
+    # Create artifacts
+    print("\n[5/5] Membuat artifacts...")
+    
+    # Confusion matrix
+    cm_path = plot_confusion_matrix(y_test, y_pred, 'artifacts/confusion_matrix.png')
+    mlflow.log_artifact(cm_path)
+    print("      Logged confusion matrix")
+    
+    # Classification report
+    report_path = save_classification_report(y_test, y_pred, 
+                                             'artifacts/classification_report.txt')
+    mlflow.log_artifact(report_path)
+    print("      Logged classification report")
+    
+    # Log trained model
+    mlflow.sklearn.log_model(model, "model")
+    print("      Logged trained model")
+    
+    # Simpan model lokal (untuk Docker)
+    os.makedirs('models', exist_ok=True)
+    model_path = 'models/spam_detection_model.joblib'
+    joblib.dump(model, model_path)
+    mlflow.log_artifact(model_path)
+    print(f"      Saved model to {model_path}")
+    
+    run_id = mlflow.active_run().info.run_id
+    print(f"\n      MLflow Run ID: {run_id}")
     
     print("\n" + "=" * 60)
     print("TRAINING COMPLETED SUCCESSFULLY!")
