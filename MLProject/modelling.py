@@ -121,14 +121,30 @@ def train_model(test_size=0.2, random_state=42, alpha=0.1):
     )
     print(f"      Training: {X_train.shape[0]}, Test: {X_test.shape[0]}")
     
-    # Set experiment
-    print("\n[3/5] Setup MLflow experiment...")
-    mlflow.set_experiment("Spam_Detection_CI")
-    print("      Experiment: Spam_Detection_CI")
+    # Set experiment only if not already in a run (mlflow run creates its own)
+    active_run = mlflow.active_run()
+    if active_run is None:
+        print("\n[3/5] Setup MLflow experiment...")
+        mlflow.set_experiment("Spam_Detection_CI")
+        print("      Experiment: Spam_Detection_CI")
+        should_end_run = True
+    else:
+        print("\n[3/5] Using existing MLflow run...")
+        print(f"      Run ID: {active_run.info.run_id}")
+        should_end_run = False
     
     # Train model dengan MLflow tracking
     print("\n[4/5] Melatih model...")
-    with mlflow.start_run(run_name="CI_NB_Model"):
+    
+    # If not in a run, start one; otherwise use the existing run
+    if should_end_run:
+        run_context = mlflow.start_run(run_name="CI_NB_Model")
+    else:
+        # Use a dummy context manager that does nothing
+        from contextlib import nullcontext
+        run_context = nullcontext()
+    
+    with run_context:
         
         # Log parameters
         mlflow.log_param("test_size", test_size)
