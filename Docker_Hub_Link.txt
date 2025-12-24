@@ -1,5 +1,4 @@
-Docker Hub Repository: https://hub.docker.com/r/dysnomiaborealis/workflow-ci-spam-detection
-
+Docker Hub Repository: https://hub.docker.com/repository/docker/dysnomiaborealis/workflow-ci-spam-detection
 Pull Command:
 docker pull dysnomiaborealis/workflow-ci-spam-detection:latest
 

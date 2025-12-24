@@ -75,12 +75,6 @@ Run container:
 docker run -p 5000:5000 YOUR_DOCKERHUB_USERNAME/workflow-ci-spam-detection:latest
 ```
 
-## Kriteria yang Dipenuhi
-
-- ✅ **Basic (2 pts)**: MLProject folder + Workflow CI
-- ✅ **Skilled (3 pts)**: Artifact storage ke GitHub
-- ✅ **Advance (4 pts)**: Docker images ke Docker Hub
-
 ## Model Details
 
 - **Model**: Multinomial Naive Bayes
@@ -88,6 +82,3 @@ docker run -p 5000:5000 YOUR_DOCKERHUB_USERNAME/workflow-ci-spam-detection:lates
 - **Features**: TF-IDF Vectorization
 - **Metrics**: Accuracy, Precision, Recall, F1-Score, ROC-AUC
 
-## Author
-
-Yudhistira Paksi
